@@ -4,6 +4,7 @@ local wezterm = require("wezterm")
 -- This will hold the configuration.
 local config = wezterm.config_builder()
 
+config.default_prog = { "/home/taimase/.nix-profile/bin/fish", "-l" }
 -- This is where you actually apply your config choices
 -- For example, changing the color scheme:
 config.color_scheme = "cyberpunk"
@@ -91,7 +92,7 @@ end)
 -- BACKGROUND
 local dimmer = { brightness = 0.03 }
 -- NOTE: Change this to get the images to work
-local path = "/home/talmage/.config/wezterm/wilds/"
+local path = "/home/taimase/.config/wezterm/wilds/"
 local possibilities = { "Left", "Right", "Center" }
 config.enable_scroll_bar = true
 config.background = {
@@ -235,6 +236,43 @@ config.background = {
 	},
 }
 
+-- if you are *NOT* lazy-loading smart-splits.nvim (recommended)
+local function is_vim(pane)
+	-- this is set by the plugin, and unset on ExitPre in Neovim
+	return pane:get_user_vars().IS_NVIM == "true"
+end
+
+local direction_keys = {
+	h = "Left",
+	j = "Down",
+	k = "Up",
+	l = "Right",
+	LeftArrow = "Left",
+	DownArrow = "Down",
+	UpArrow = "Up",
+	RightArrow = "Right",
+}
+
+local function split_nav(resize_or_move, key)
+	return {
+		key = key,
+		mods = "CTRL",
+		action = wezterm.action_callback(function(win, pane)
+			if is_vim(pane) then
+				-- pass the keys through to vim/nvim
+				win:perform_action({
+					SendKey = { key = key, mods = "CTRL" },
+				}, pane)
+			else
+				if resize_or_move == "resize" then
+					win:perform_action({ AdjustPaneSize = { direction_keys[key], 3 } }, pane)
+				else
+					win:perform_action({ ActivatePaneDirection = direction_keys[key] }, pane)
+				end
+			end
+		end),
+	}
+end
 -- KEYS
 config.disable_default_key_bindings = true
 config.leader = { key = "Space", mods = "CTRL", timeout_milliseconds = 1500 }
@@ -385,7 +423,16 @@ config.keys = {
 		mods = "LEADER",
 		action = wezterm.action({ Search = { CaseInSensitiveString = "" } }),
 	},
+	-- -- move between split panes
+	split_nav("move", "h"),
+	split_nav("move", "j"),
+	split_nav("move", "k"),
+	split_nav("move", "l"),
+	-- resize panes
+	split_nav("resize", "LeftArrow"),
+	split_nav("resize", "DownArrow"),
+	split_nav("resize", "UpArrow"),
+	split_nav("resize", "RightArrow"),
 }
 
--- and finally, return the configuration to wezterm
 return config
