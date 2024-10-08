@@ -273,6 +273,19 @@ local function split_nav(resize_or_move, key)
 		end),
 	}
 end
+
+wezterm.on("toggle-tabbar", function(window, _)
+	local overrides = window:get_config_overrides() or {}
+	if overrides.enable_tab_bar == false then
+		wezterm.log_info("tab bar shown")
+		overrides.enable_tab_bar = true
+	else
+		wezterm.log_info("tab bar hidden")
+		overrides.enable_tab_bar = false
+	end
+	window:set_config_overrides(overrides)
+end)
+
 -- KEYS
 config.disable_default_key_bindings = true
 config.leader = { key = "Space", mods = "CTRL", timeout_milliseconds = 1500 }
@@ -423,6 +436,7 @@ config.keys = {
 		mods = "LEADER",
 		action = wezterm.action({ Search = { CaseInSensitiveString = "" } }),
 	},
+	{ key = "b", mods = "LEADER", action = wezterm.action.EmitEvent("toggle-tabbar") },
 	-- -- move between split panes
 	split_nav("move", "h"),
 	split_nav("move", "j"),
